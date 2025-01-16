@@ -4,9 +4,20 @@ const urlsToCache = ["/", "/about", "/globals.css"];
 self.addEventListener("install", (event) => {
 	event.waitUntil(
 		caches.open(CACHE_NAME).then((cache) => {
-			return cache.addAll(urlsToCache).catch((error) => {
-				console.error("Error caching resources:", error);
-			});
+			return Promise.all(
+				urlsToCache.map((url) => {
+					return fetch(url)
+						.then((response) => {
+							if (!response.ok) {
+								throw new Error(`HTTP error! status: ${response.status}`);
+							}
+							return cache.put(url, response);
+						})
+						.catch((error) => {
+							console.error(`Failed to cache ${url}:`, error);
+						});
+				})
+			);
 		})
 	);
 });
